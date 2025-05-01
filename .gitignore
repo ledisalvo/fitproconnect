@@ -1,0 +1,32 @@
+# Archivos y carpetas generados por Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Archivos de compilación
+bin/
+obj/
+out/
+
+# Archivos de configuración local
+*.dbmdl
+*.log
+*.pdb
+
+# Paquetes y dependencias
+*.nupkg
+packages/
+
+# Carpetas del sistema
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Archivos de Docker
+**/Dockerfile
+**/docker-compose.override.yml
+
+# Sistema operativo
+.DS_Store

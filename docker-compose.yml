@@ -1,0 +1,37 @@
+version: '3.9'
+
+services:
+  auth-db:
+    image: postgres:15
+    container_name: fitpro-auth-db
+    environment:
+      POSTGRES_USER: auth_user
+      POSTGRES_PASSWORD: secretpassword
+      POSTGRES_DB: authdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - authdb-data:/var/lib/postgresql/data
+    networks:
+      - fitpro-network
+
+  auth-service:
+    build:
+      context: ./src/AuthService/AuthService.API
+      dockerfile: Dockerfile
+    container_name: fitpro-auth-service
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+    ports:
+      - "5001:80"
+    depends_on:
+      - auth-db
+    networks:
+      - fitpro-network
+
+volumes:
+  authdb-data:
+
+networks:
+  fitpro-network:
+    driver: bridge
