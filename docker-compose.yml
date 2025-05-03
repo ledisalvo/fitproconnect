@@ -17,15 +17,15 @@ services:
 
   auth-service:
     build:
-      context: ./src/AuthService/AuthService.API
-      dockerfile: Dockerfile
+      context: ./AuthService
+      dockerfile: AuthService.API/Dockerfile
     container_name: fitpro-auth-service
-    environment:
-      ASPNETCORE_ENVIRONMENT: Development
     ports:
       - "5001:80"
     depends_on:
       - auth-db
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
     networks:
       - fitpro-network
 
