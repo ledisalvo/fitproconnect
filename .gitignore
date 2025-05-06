@@ -24,9 +24,5 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 
-# Archivos de Docker
-**/Dockerfile
-**/docker-compose.override.yml
-
 # Sistema operativo
 .DS_Store
