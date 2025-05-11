@@ -15,6 +15,20 @@ services:
     networks:
       - fitpro-network
 
+  user-db:
+    image: postgres:15
+    container_name: fitpro-user-db
+    environment:
+      POSTGRES_USER: user_service
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: userservice
+    ports:
+      - "5433:5432"
+    volumes:
+      - userdb-data:/var/lib/postgresql/data
+    networks:
+      - fitpro-network
+
   auth-service:
     build:
       context: ./AuthService
@@ -29,8 +43,30 @@ services:
     networks:
       - fitpro-network
 
+  user-service:
+    build:
+      context: ./UserService
+      dockerfile: UserService.API/Dockerfile
+    container_name: fitpro-user-service
+    ports:
+      - "5002:80"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+    networks:
+      - fitpro-network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: fitpro-rabbitmq
+    ports:
+      - "5672:5672"     # Puerto de comunicación AMQP
+      - "15672:15672"   # Interfaz web de RabbitMQ
+    networks:
+      - fitpro-network
+
 volumes:
   authdb-data:
+  userdb-data:
 
 networks:
   fitpro-network:

@@ -1,7 +1,11 @@
-﻿using AuthService.Application.Dtos;
+﻿using AuthService.Application.Common;
+using AuthService.Application.Dtos;
+using AuthService.Application.Events;
 using AuthService.Application.Interfaces;
+using AuthService.Domain.Constants;
 using AuthService.Domain.Entities;
 using AuthService.Infrastructure.Data;
+using AuthService.Infrastructure.Messaging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -15,15 +19,21 @@ public class AuthService : IAuthService
 {
     private readonly AuthDbContext _context;
     private readonly IConfiguration _config;
+    private readonly IEventBus _eventBus;
 
-    public AuthService(AuthDbContext context, IConfiguration config)
+    public AuthService(AuthDbContext context, IConfiguration config, IEventBus eventBus)
     {
         _context = context;
         _config = config;
+        _eventBus = eventBus;
     }
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterRequestDto request)
     {
+
+        if (!Roles.All.Contains(request.Role ?? Roles.User))
+            throw new Exception($"Rol inválido. Los roles válidos son: {string.Join(", ", Roles.All)}");
+
         if (await _context.Users.AnyAsync(u => u.Email == request.Email))
             throw new Exception("El email ya está registrado");
 
@@ -32,17 +42,26 @@ public class AuthService : IAuthService
         var user = new User
         {
             Email = request.Email,
-            PasswordHash = hashedPassword
+            PasswordHash = hashedPassword,
+            Role = request.Role ?? Roles.User
         };
 
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
+
+        _eventBus.Publish(new UserRegisteredEvent
+        {
+            Email = user.Email,
+            Role = user.Role
+        });
 
         return new AuthResponseDto
         {
             Email = user.Email,
             Token = GenerateJwt(user)
         };
+
+
     }
 
     public async Task<AuthResponseDto> LoginAsync(LoginRequestDto request)

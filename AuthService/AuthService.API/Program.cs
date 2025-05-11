@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.OpenApi.Models;
+using AuthService.Application.Common;
+using AuthService.Infrastructure.Messaging;
 
 
 namespace AuthService.API
@@ -53,7 +55,7 @@ namespace AuthService.API
                 });
             });
 
-
+            builder.Services.AddSingleton<IEventBus, RabbitMqEventBus>();
             builder.Services.AddScoped<IAuthService, Infrastructure.Services.AuthService>();
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                     .AddJwtBearer(options =>
