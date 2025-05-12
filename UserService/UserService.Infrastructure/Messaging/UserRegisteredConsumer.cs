@@ -8,6 +8,7 @@ using System.Text.Json;
 using UserService.Application.Common;
 using UserService.Application.Events;
 using UserService.Domain.Entities;
+using UserService.Infrastructure.Common;
 using UserService.Infrastructure.Data;
 
 namespace UserService.Infrastructure.Messaging;
@@ -37,36 +38,46 @@ public class UserRegisteredConsumer : BackgroundService
             var message = Encoding.UTF8.GetString(body);
             var userRegistered = JsonSerializer.Deserialize<UserRegisteredEvent>(message);
 
-            Console.WriteLine($"[UserService] Usuario registrado: {userRegistered!.Email}, Rol: {userRegistered.Role}, Fecha: {userRegistered.RegisteredAt}");
-            // Acá podrías guardar en base de datos, enviar mail, etc.
-            using var scope = _scopeFactory.CreateScope();
-            var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
-            var db = scope.ServiceProvider.GetRequiredService<UserDbContext>();
-            var exists = await db.Users.AnyAsync(u => u.Email == userRegistered.Email);
-
-            if (!exists)
+            await RetryHelper.TryAsync(async () =>
             {
-                db.Users.Add(new User
+                using var scope = _scopeFactory.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<UserDbContext>();
+                var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
+
+                var exists = await db.Users.AnyAsync(u => u.Email == userRegistered.Email);
+
+                if (!exists)
                 {
-                    Email = userRegistered.Email,
-                    Role = userRegistered.Role,
-                    RegisteredAt = userRegistered.RegisteredAt
-                });
+                    db.Users.Add(new User
+                    {
+                        Email = userRegistered.Email,
+                        Role = userRegistered.Role,
+                        RegisteredAt = userRegistered.RegisteredAt
+                    });
 
-                await db.SaveChangesAsync();
+                    db.EventLogs.Add(new EventLog
+                    {
+                        Email = userRegistered.Email,
+                        Status = "consumido",
+                        Source = "evento"
+                    });
 
-                await emailService.SendAsync(
-                    userRegistered.Email,
-                    "Bienvenido a FitPro Connect 💪",
-                    $"Hola {userRegistered.Email}, tu cuenta fue creada exitosamente el {userRegistered.RegisteredAt}.");
+                    await db.SaveChangesAsync();
 
-                
-                Console.WriteLine($"[UserService] Usuario guardado: {userRegistered.Email}");
-            }
-            else
-            {
-                Console.WriteLine($"[UserService] Usuario ya existe: {userRegistered.Email}");
-            }
+                    await emailService.SendAsync(
+                        userRegistered.Email,
+                        "Bienvenido a FitPro Connect 💪",
+                        $"Hola {userRegistered.Email}, tu cuenta fue creada exitosamente el {userRegistered.RegisteredAt}."
+                    );
+
+                    Console.WriteLine($"[UserService] Usuario guardado y mail enviado: {userRegistered.Email}");
+                }
+                else
+                {
+                    Console.WriteLine($"[UserService] Usuario ya existe: {userRegistered.Email}");
+                }
+            });
+
         };
 
         _channel.BasicConsume(queue: "UserRegisteredEvent", autoAck: true, consumer: consumer);

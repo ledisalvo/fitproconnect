@@ -7,6 +7,7 @@ using UserService.Application.Common;
 using UserService.Infrastructure.Services;
 using UserService.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using AuthService.Infrastructure.Messaging;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -46,7 +47,9 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddDbContext<UserDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+builder.Services.AddSingleton<IEventBus, RabbitMqEventBus>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddHttpClient<AuthServiceClient>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {

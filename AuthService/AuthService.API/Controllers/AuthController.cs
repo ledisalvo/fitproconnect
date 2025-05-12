@@ -1,7 +1,9 @@
 ﻿using AuthService.Application.Dtos;
 using AuthService.Application.Interfaces;
+using AuthService.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace AuthService.API.Controllers;
@@ -38,4 +40,30 @@ public class AuthController : ControllerBase
         var email = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
         return Ok(new { Email = email, Message = "Token válido 💪" });
     }
+
+    [HttpGet("emails")]
+    public async Task<IActionResult> GetAllEmails([FromServices] AuthDbContext db)
+    {
+        var emails = await db.Users
+            .Select(u => u.Email)
+            .ToListAsync();
+
+        return Ok(emails);
+    }
+
+    [HttpGet("detail/{email}")]
+    public async Task<IActionResult> GetUserByEmail(string email, [FromServices] AuthDbContext db)
+    {
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Email == email);
+        if (user is null)
+            return NotFound();
+
+        return Ok(new
+        {
+            user.Email,
+            user.Role,
+            user.RegisteredAt
+        });
+    }
+
 }
