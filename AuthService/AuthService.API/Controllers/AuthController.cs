@@ -54,7 +54,7 @@ public class AuthController : ControllerBase
     [HttpGet("detail/{email}")]
     public async Task<IActionResult> GetUserByEmail(string email, [FromServices] AuthDbContext db)
     {
-        var user = await db.Users.FirstOrDefaultAsync(u => u.Email == email);
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Email == email.Trim().ToLower());
         if (user is null)
             return NotFound();
 

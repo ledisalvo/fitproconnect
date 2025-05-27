@@ -46,9 +46,15 @@ public class SyncController : ControllerBase
         foreach (var email in missing)
         {
             var detail = await _authService.GetUserDetailAsync(email);
-
+            if (detail is null || string.IsNullOrWhiteSpace(detail.Email))
+            {
+                Console.WriteLine($"❌ Evento omitido. Usuario no encontrado o email vacío para: {email}");
+                continue;
+            }
             if (detail is not null)
             {
+                Console.WriteLine($"Reprocesando: {email}");
+                Console.WriteLine($"Detail → email: {detail?.Email}, role: {detail?.Role}, registeredAt: {detail?.RegisteredAt}");
                 _eventBus.Publish(detail);
                 _db.EventLogs.Add(new EventLog
                 {

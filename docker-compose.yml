@@ -1,6 +1,15 @@
 version: '3.9'
 
 services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: fitpro-rabbitmq
+    ports:
+      - "5672:5672"     # Puerto de comunicación AMQP
+      - "15672:15672"   # Interfaz web de RabbitMQ
+    networks:
+      - fitpro-network
+
   auth-db:
     image: postgres:15
     container_name: fitpro-auth-db
@@ -54,15 +63,8 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
     networks:
       - fitpro-network
-
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: fitpro-rabbitmq
-    ports:
-      - "5672:5672"     # Puerto de comunicación AMQP
-      - "15672:15672"   # Interfaz web de RabbitMQ
-    networks:
-      - fitpro-network
+    depends_on:
+      - rabbitmq
 
 volumes:
   authdb-data:

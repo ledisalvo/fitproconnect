@@ -11,6 +11,7 @@ using AuthService.Infrastructure.Messaging;
 
 
 var builder = WebApplication.CreateBuilder(args);
+var corsPolicy = "AllowDashboard";
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -72,6 +73,16 @@ builder.WebHost.ConfigureKestrel(options =>
 });
 
 builder.Services.AddHostedService<UserRegisteredConsumer>();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: corsPolicy, policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:5173")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 
 var app = builder.Build();
 
@@ -82,7 +93,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-
+app.UseRouting();
+app.UseCors(corsPolicy);
 
 app.Run();
 

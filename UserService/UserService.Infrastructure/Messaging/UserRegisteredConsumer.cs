@@ -21,9 +21,23 @@ public class UserRegisteredConsumer : BackgroundService
 
     public UserRegisteredConsumer(IServiceScopeFactory scopeFactory)
     {
-        var factory = new ConnectionFactory() { HostName = "rabbitmq" };
-        _connection = factory.CreateConnection();
-        _channel = _connection.CreateModel();
+        var factory = new ConnectionFactory { HostName = "rabbitmq" };
+
+        for (int i = 0; i < 5; i++)
+        {
+            try
+            {
+                _connection = factory.CreateConnection();
+                _channel = _connection.CreateModel();
+                break;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Retry] RabbitMQ not ready, retrying in 3s... ({i + 1}/5)");
+                Thread.Sleep(3000);
+                if (i == 4) throw;
+            }
+        }
         _channel.QueueDeclare(queue: "UserRegisteredEvent", durable: false, exclusive: false, autoDelete: false);
         _scopeFactory = scopeFactory;
     }
